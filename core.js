@@ -121,15 +121,33 @@ function loadInvoice(inv){
   (inv.items && inv.items.length ? inv.items : [{ desc: "Publicidad radiof\u00f3nica", amount: 0 }]).forEach(function(it){ addItem(it.desc, it.amount ? String(it.amount).replace(".", ",") : ""); });
   recalc();
 }
+function deleteInvoice(num){
+  var n = String(num);
+  var inv = state.invoices.find(function(x){ return String(x.number) === n; });
+  if (!inv) return;
+  if (!confirm("\u00bfBorrar la factura n.\u00ba " + n + (inv.cliNombre ? (" de " + inv.cliNombre) : "") + "?")) return;
+  state.invoices = state.invoices.filter(function(x){ return String(x.number) !== n; });
+  saveState();
+  renderHistory();
+  renderClients();
+  toast("Factura n.\u00ba " + n + " borrada");
+}
 function renderHistory(){
   const box = $("historial");
   if (!state.invoices.length) { box.innerHTML = "<p class='hint'>A\u00fan no hay facturas en este navegador.</p>"; return; }
-  box.innerHTML = state.invoices.map(function(inv){ return "<div class=\"hist-item\" data-n=\"" + inv.number + "\"><b>N.\u00ba " + inv.number + "</b><div>" + (inv.cliNombre || "Sin cliente") + "<small>" + fmtDate(inv.fecha) + " \u00b7 " + euro(inv.total) + "</small></div><button class=\"btn-ghost\" type=\"button\" data-pdf=\"" + inv.number + "\">PDF</button></div>"; }).join("");
+  box.innerHTML = state.invoices.map(function(inv){
+    return "<div class=\"hist-item\" data-n=\"" + inv.number + "\"><b>N.\u00ba " + inv.number + "</b><div>" + (inv.cliNombre || "Sin cliente") + "<small>" + fmtDate(inv.fecha) + " \u00b7 " + euro(inv.total) + "</small></div><button class=\"btn-ghost\" type=\"button\" data-pdf=\"" + inv.number + "\">PDF</button><button class=\"btn-danger\" type=\"button\" data-del=\"" + inv.number + "\">Borrar</button></div>";
+  }).join("");
   Array.prototype.slice.call(box.querySelectorAll(".hist-item")).forEach(function(el){
     el.addEventListener("click", function(ev){
       if (ev.target.dataset.pdf) {
         const inv = state.invoices.find(function(x){ return String(x.number) === ev.target.dataset.pdf; });
         if (inv) { inv.settings = Object.assign({}, EMISOR, inv.settings || {}); generatePdf(inv); }
+        return;
+      }
+      if (ev.target.dataset.del) {
+        ev.stopPropagation();
+        deleteInvoice(ev.target.dataset.del);
         return;
       }
       const inv2 = state.invoices.find(function(x){ return String(x.number) === el.dataset.n; });
