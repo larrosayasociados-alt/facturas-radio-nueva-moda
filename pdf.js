@@ -3,24 +3,24 @@ function generatePdf(inv){
   const doc=new jsPDF({unit:"mm",format:"a4"});
   const W=210,H=297;
   const navy=[11,31,74],gold=[240,180,41],goldSoft=[247,212,138],ink=[26,35,50],muted=[91,101,117],soft=[238,243,250],line=[216,222,232];
-  doc.setFillColor(...navy);doc.rect(0,0,W,38,"F");
-  doc.setFillColor(...gold);doc.rect(0,38,W,1.4,"F");
+  doc.setFillColor(...navy);doc.rect(0,0,W,44,"F");
+  doc.setFillColor(...gold);doc.rect(0,44,W,1.4,"F");
   var logoSrc = window.LOGO_B64 ? ("data:image/jpeg;base64," + window.LOGO_B64) : (typeof LOGO_SRC === "string" ? LOGO_SRC : "");
   if (logoSrc) {
-    try { doc.addImage(logoSrc, "JPEG", 14, 6, 26, 26); } catch (e) {}
+    try { doc.addImage(logoSrc, "JPEG", 12, 6, 18, 27); } catch (e) {}
   }
   doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(16);
-  doc.text(inv.settings.emNombre||"RADIO NUEVA MODA",42,16);
+  doc.text(inv.settings.emNombre||"RADIO NUEVA MODA",34,16);
   doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(...goldSoft);
-  doc.text("100.4 FM  \u00b7  99.5 FM",42,22);
+  doc.text("100.4 FM  \u00b7  99.5 FM",34,22);
   doc.setTextColor(201,212,232);doc.setFontSize(8);
-  doc.text(`${inv.settings.emDir||""}  \u00b7  NIT ${inv.settings.emNif||""}`,42,27);
-  doc.text(`${inv.settings.emWeb||""}  \u00b7  ${inv.settings.emEmail||""}`,42,32);
-  doc.setFillColor(19,40,79);doc.roundedRect(148,9,46,22,3,3,"F");
-  doc.setTextColor(...gold);doc.setFontSize(8);doc.text("FACTURA",152,16);
-  doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("N.\u00ba "+inv.number,152,24);
-  doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...goldSoft);doc.text(fmtDate(inv.fecha),176,24);
-  const cardY=46;
+  doc.text(`${inv.settings.emDir||""}  \u00b7  NIT ${inv.settings.emNif||""}`,34,28);
+  doc.text(`${inv.settings.emWeb||""}  \u00b7  ${inv.settings.emEmail||""}`,34,33);
+  doc.setFillColor(19,40,79);doc.roundedRect(148,11,46,22,3,3,"F");
+  doc.setTextColor(...gold);doc.setFontSize(8);doc.text("FACTURA",152,18);
+  doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("N.\u00ba "+inv.number,152,26);
+  doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...goldSoft);doc.text(fmtDate(inv.fecha),176,26);
+  const cardY=52;
   doc.setFillColor(...soft);doc.roundedRect(16,cardY,86,28,3,3,"F");doc.roundedRect(108,cardY,86,28,3,3,"F");
   doc.setFillColor(...gold);doc.roundedRect(16,cardY,18,2.2,1,1,"F");doc.roundedRect(108,cardY,18,2.2,1,1,"F");
   doc.setFont("helvetica","bold");doc.setFontSize(8);doc.setTextColor(...navy);
@@ -33,16 +33,16 @@ function generatePdf(inv){
   doc.text(inv.cliDir||"\u2014",112,cardY+19);
   doc.text(`${inv.cliCp||""}  \u00b7  CIF ${inv.cliCif||"\u2014"}`,112,cardY+23);
   doc.text("Tel. "+(inv.cliTel||"\u2014"),112,cardY+27);
-  doc.setFontSize(8);doc.setTextColor(...muted);doc.text("PERIODO DE SERVICIO",16,82);
+  doc.setFontSize(8);doc.setTextColor(...muted);doc.text("PERIODO DE SERVICIO",16,88);
   doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...navy);
   const per=(inv.periodoDesde&&inv.periodoHasta)?`${fmtDate(inv.periodoDesde)}  \u2014  ${fmtDate(inv.periodoHasta)}`:"\u2014";
-  doc.text(per,58,82);
-  const tableTop=88;
+  doc.text(per,58,88);
+  const tableTop=94;
   doc.setFillColor(...navy);doc.roundedRect(16,tableTop,178,9,2,2,"F");doc.rect(16,tableTop+6,178,3,"F");
   doc.setTextColor(...gold);doc.setFontSize(8);
   doc.text("FECHA",20,tableTop+6);doc.text("DESCRIPCI\u00d3N",48,tableTop+6);doc.text("IMPORTE",176,tableTop+6,{align:"right"});
   const rows=(inv.items&&inv.items.length)?inv.items:[{desc:"",amount:0}];
-  const empty=Math.max(0,5-rows.length);const rowH=10;const bodyH=(rows.length+empty)*rowH;
+  const empty=Math.max(0,4-rows.length);const rowH=10;const bodyH=(rows.length+empty)*rowH;
   doc.setFillColor(250,251,254);doc.rect(16,tableTop+9,178,bodyH,"F");
   let y=tableTop+9;
   rows.forEach((it,i)=>{if(i%2===0){doc.setFillColor(246,248,252);doc.rect(16,y,178,rowH,"F");}doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(...ink);doc.text(fmtDate(inv.fecha),20,y+6.4);doc.text(it.desc||"",48,y+6.4,{maxWidth:110});doc.setFont("helvetica","bold");doc.text(euro(it.amount),190,y+6.4,{align:"right"});y+=rowH;doc.setDrawColor(...line);doc.setLineWidth(0.2);doc.line(16,y,194,y);});
