@@ -28,20 +28,24 @@ function saveState(){
 }
 let state = loadState();
 function $(id){ return document.getElementById(id); }
+function currentNumber(){
+  var el = $("numFactura") || $("nextNum");
+  return Math.max(1, parseInt(el && el.value, 10) || state.settings.nextNum || 1);
+}
+function setCurrentNumber(n){
+  n = Math.max(1, parseInt(n, 10) || 1);
+  if ($("numFactura")) $("numFactura").value = n;
+  if ($("nextNum")) $("nextNum").value = n;
+  if ($("nextLabel")) $("nextLabel").textContent = "n.\u00ba " + n;
+  state.settings.nextNum = n;
+}
 function euro(n){ return (Number(n) || 0).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " \u20ac"; }
 function parseMoney(v){ if (typeof v === "number") return v; return Number(String(v).replace(/\./g, "").replace(",", ".").replace(/[^\d.-]/g, "")) || 0; }
 function todayISO(){ const d = new Date(); const z = function(n){ return String(n).padStart(2, "0"); }; return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate()); }
 function fmtDate(iso){ if (!iso) return ""; const p = iso.split("-"); return p[2] + "/" + p[1] + "/" + p[0]; }
 function toast(msg){ const el = $("toast"); if (!el) return; el.textContent = msg; el.style.display = "block"; setTimeout(function(){ el.style.display = "none"; }, 2400); }
-function fillSettings(){
-  if ($("nextNum")) $("nextNum").value = state.settings.nextNum || 8;
-  if ($("nextLabel")) $("nextLabel").textContent = "n.\u00ba " + (state.settings.nextNum || 8);
-}
-function getSettingsFromForm(){
-  var next = 8;
-  if ($("nextNum")) next = Math.max(1, parseInt($("nextNum").value, 10) || 1);
-  return Object.assign({}, EMISOR, { nextNum: next });
-}
+function fillSettings(){ setCurrentNumber(state.settings.nextNum || 8); }
+function getSettingsFromForm(){ return Object.assign({}, EMISOR, { nextNum: currentNumber() }); }
 function addItem(desc, amount){
   desc = desc || "Publicidad radiof\u00f3nica";
   amount = amount || "";
@@ -69,13 +73,7 @@ function recalc(){
 function collectInvoice(consumeNumber){
   const settings = getSettingsFromForm();
   const totals = recalc();
-  if (consumeNumber) {
-    const last = state.invoices[0];
-    const recent = last && (Date.now() - new Date(last.createdAt).getTime() < 180000);
-    const same = recent && last.cliNombre === $("cliNombre").value.trim() && last.fecha === ($("fecha").value || todayISO()) && Math.abs((last.total || 0) - (totals.total || 0)) < 0.001;
-    if (same) return last;
-  }
-  const num = settings.nextNum;
+  const num = currentNumber();
   const inv = {
     number: num,
     fecha: $("fecha").value || todayISO(),
@@ -93,11 +91,11 @@ function collectInvoice(consumeNumber){
     settings: settings,
     createdAt: new Date().toISOString()
   };
-  if (consumeNumber && !state.invoices.some(function(x){ return x.number === num; })) {
-    state.invoices.unshift(inv);
-    settings.nextNum = num + 1;
-    if ($("nextNum")) $("nextNum").value = settings.nextNum;
-    if ($("nextLabel")) $("nextLabel").textContent = "n.\u00ba " + settings.nextNum;
+  if (consumeNumber) {
+    var idx = -1;
+    for (var i = 0; i < state.invoices.length; i++) { if (state.invoices[i].number === num) { idx = i; break; } }
+    if (idx >= 0) state.invoices[idx] = inv;
+    else state.invoices.unshift(inv);
     state.settings = settings;
     saveState();
     renderHistory();
@@ -106,6 +104,7 @@ function collectInvoice(consumeNumber){
   return inv;
 }
 function loadInvoice(inv){
+  setCurrentNumber(inv.number || currentNumber());
   $("fecha").value = inv.fecha || "";
   $("periodoDesde").value = inv.periodoDesde || "";
   $("periodoHasta").value = inv.periodoHasta || "";
@@ -154,7 +153,9 @@ function boot(){
   $("addItem").onclick = function(){ addItem("", ""); };
   $("igic").oninput = recalc;
   $("exento").onchange = recalc;
-  if ($("nextNum")) $("nextNum").oninput = function(){ $("nextLabel").textContent = "n.\u00ba " + (parseInt($("nextNum").value, 10) || 1); };
+  function onNum(){ setCurrentNumber(currentNumber()); }
+  if ($("numFactura")) $("numFactura").oninput = onNum;
+  if ($("nextNum")) $("nextNum").oninput = onNum;
   $("btnPdf").onclick = function(){ if (!$("cliNombre").value.trim()) { toast("Escribe el nombre del cliente"); return; } generatePdf(collectInvoice(true)); };
   $("btnWa").onclick = function(){ if (!$("cliNombre").value.trim()) { toast("Escribe el nombre del cliente"); return; } var inv = collectInvoice(true); generatePdf(inv); var phone = cleanPhone(inv.cliTel); if (!phone) { toast("Falta el tel\u00e9fono del cliente"); return; } window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(messageText(inv) + "\n\nAdjunto el PDF descargado."), "_blank"); };
   $("btnMail").onclick = function(){ if (!$("cliNombre").value.trim()) { toast("Escribe el nombre del cliente"); return; } var inv = collectInvoice(true); generatePdf(inv); if (!inv.cliEmail) { toast("Falta el email del cliente"); return; } var subject = "Factura " + inv.number + " \u00b7 " + EMISOR.emNombre; window.location.href = "mailto:" + encodeURIComponent(inv.cliEmail) + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(messageText(inv) + "\n\nAdjunte el PDF descargado a este correo."); };
