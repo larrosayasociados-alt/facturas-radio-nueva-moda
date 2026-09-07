@@ -7,11 +7,7 @@ function generatePdf(inv){
   doc.setFillColor(...gold);doc.rect(0,38,W,1.4,"F");
   var logoSrc = window.LOGO_B64 ? ("data:image/jpeg;base64," + window.LOGO_B64) : (typeof LOGO_SRC === "string" ? LOGO_SRC : "");
   if (logoSrc) {
-    try {
-      doc.setFillColor(255,255,255);
-      doc.circle(27, 19.5, 12, "F");
-      doc.addImage(logoSrc, "JPEG", 16, 8, 22, 22);
-    } catch (e) {}
+    try { doc.addImage(logoSrc, "JPEG", 14, 6, 26, 26); } catch (e) {}
   }
   doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(16);
   doc.text(inv.settings.emNombre||"RADIO NUEVA MODA",42,16);
